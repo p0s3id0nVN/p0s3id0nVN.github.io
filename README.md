@@ -1,4 +1,4 @@
-# PSDiFont
+# PSD Font
 
 Công cụ chuyển đổi phông chữ iOS 18~26 trên trình duyệt. Không cần cài đặt, không cần tải lên, tất cả xử lý được hoàn toàn tự động.
 
