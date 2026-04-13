@@ -1,0 +1,305 @@
+<!-- @huamidev 2026/04/13 -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>iFont</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+:root { --bg: #000; --surface: #0a0a0a; --border: #333; --border-hover: #666; --text: #fff; --success: #2ea043; --warning: #d29922; --error: #f85149; }
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { background: var(--bg); }
+body { font-family: -apple-system, 'SF Pro Text', 'Helvetica Neue', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; min-height: 100dvh; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+
+.container { max-width: 600px; margin: 0 auto; padding: 60px 24px 80px; }
+@media (max-width: 480px) { .container { padding: 40px 20px 80px; } }
+
+.header { margin-bottom: 48px; text-align: center; }
+.header h1 { font-size: 24px; font-weight: 600; letter-spacing: -0.5px; color: var(--text); margin-bottom: 8px; }
+.header .desc { font-size: 13px; line-height: 1.6; color: var(--text2); }
+
+.upload-section { margin-bottom: 20px; }
+.upload-box { position: relative; border: 1px dashed var(--border); border-radius: 8px; padding: 32px 20px; text-align: center; cursor: pointer; transition: all 0.3s ease; overflow: hidden; background: var(--surface); }
+.upload-box:hover, .upload-box.drag-over { border-color: var(--border-hover); background: #111; }
+.upload-box:active { transform: scale(0.99); }
+.upload-box.loaded { border-style: solid; border-color: var(--text2); }
+.upload-box .title { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 6px; }
+.upload-box .hint { font-size: 12px; color: var(--text3); }
+.upload-box input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; font-size: 0; }
+.file-info { margin-top: 12px; font-size: 12px; color: var(--text2); word-break: break-all; animation: fadeIn 0.3s ease; }
+.file-count { display: inline-block; margin-right: 6px; color: var(--text); font-weight: 500; }
+
+.mode-section { margin-bottom: 24px; padding: 0 12px; }
+.mode-title { font-size: 13px; color: var(--text2); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+.mode-options { display: flex; gap: 12px; }
+.mode-label { flex: 1; position: relative; cursor: pointer; }
+.mode-label input { position: absolute; opacity: 0; }
+.mode-text { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 12px 4px; border: 1px solid var(--border); border-radius: 12px; font-size: 14px; font-weight: 500; color: var(--text2); transition: all 0.2s; box-sizing: border-box; }
+.mode-text small { font-size: 10px; font-weight: 400; opacity: 0.7; margin-top: 4px; line-height: 1.2; }
+.mode-label input:checked + .mode-text { border-color: var(--text); color: var(--text); background: rgba(255,255,255,0.05); }
+
+.convert-btn { width: 100%; padding: 18px; border: 1px solid var(--text); border-radius: 14px; background: transparent; color: var(--text); font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.2s; letter-spacing: 1px; position: relative; overflow: hidden; margin-bottom: 24px; }
+.convert-btn:hover:not(:disabled) { background: rgba(255,255,255,0.1); }
+.convert-btn:active:not(:disabled) { transform: scale(0.98); }
+.convert-btn:disabled { border-color: var(--border); color: var(--text3); cursor: not-allowed; }
+.convert-btn.running { border-color: var(--border); color: var(--text2); pointer-events: none; }
+
+.progress-wrap { margin-top: 24px; opacity: 0; height: 0; transition: all 0.4s ease; }
+.progress-wrap.show { opacity: 1; height: 2px; }
+.progress-bar { height: 2px; background: var(--surface); overflow: hidden; }
+.progress-fill { height: 100%; width: 0; background: var(--text); transition: width 0.3s ease; }
+
+.log-panel { margin-top: 24px; max-height: 0; opacity: 0; overflow: hidden; transition: all 0.5s ease; }
+.log-panel.show { max-height: 300px; opacity: 1; }
+.log-scroll { max-height: 240px; overflow-y: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: 'SF Mono', monospace; font-size: 11px; line-height: 1.8; color: var(--text2); }
+.log-line { animation: fadeIn 0.2s ease; }
+.log-line.info { color: var(--text2); }
+.log-line.step { color: var(--warning); font-weight: 500; }
+.log-line.ok { color: var(--success); }
+.log-line.err { color: var(--error); font-weight: 600; }
+
+.results { margin-top: 24px; }
+.result-item { display: flex; align-items: center; justify-content: space-between; padding: 16px; border-bottom: 1px solid var(--border); animation: fadeIn 0.4s ease; }
+.result-name { font-size: 13px; color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.result-size { font-size: 12px; color: var(--text3); margin: 0 16px; font-variant-numeric: tabular-nums; }
+.dl-btn { font-size: 12px; color: var(--text); text-decoration: none; border-bottom: 1px solid var(--text); padding-bottom: 2px; transition: opacity 0.2s; }
+.dl-btn:hover { opacity: 0.6; }
+
+.dl-all-wrap { margin-top: 32px; text-align: center; display: none; animation: fadeIn 0.4s ease; }
+.dl-all-btn { display: inline-block; padding: 12px 32px; border: 1px solid var(--text); border-radius: 24px; background: var(--bg); color: var(--text); font-size: 13px; cursor: pointer; transition: all 0.3s; text-decoration: none; }
+.dl-all-btn:hover { background: var(--text); color: var(--bg); }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+.running-text { animation: pulse 1.5s infinite; }
+
+.footer { margin-top: 60px; text-align: center; font-size: 12px; color: var(--text3); line-height: 2; }
+.footer a { display: inline-flex; align-items: center; gap: 6px; color: var(--text2); text-decoration: none; transition: color 0.2s; }
+.footer a:hover { color: var(--text); }
+.footer a i { font-size: 14px; margin-top: 1px; }
+.footer .links { margin-top: 8px; display: flex; justify-content: center; gap: 20px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>iFont</h1>
+    <p class="desc">Công cụ chuyển đổi phông chữ iOS 18~26 hoàn toàn cục bộ<br>Hỗ trợ chuyển đổi hàng loạt TTF / OTF / TTC</p>
+  </div>
+
+  <div class="upload-section">
+    <div class="upload-box" id="src-box">
+      <div class="title">Tải phông chữ nguồn</div>
+      <div class="hint">Chọn phông chữ tùy chỉnh của bạn (hỗ trợ chọn nhiều)</div>
+      <input type="file" id="src-input" accept=".ttf,.otf,.ttc,.TTF,.OTF,.TTC" multiple>
+      <div class="file-info" id="src-info"></div>
+    </div>
+  </div>
+
+  <div class="mode-section" id="mode-section">
+    <div class="mode-title">Chọn cấu hình ánh xạ</div>
+    <div class="mode-options">
+      <label class="mode-label">
+        <input type="radio" name="weight-mode" value="single" checked>
+        <span class="mode-text">Phù hợp toàn cầu<br><small>(Sử dụng kiểu thông thường cho tất cả)</small></span>
+      </label>
+      <label class="mode-label">
+        <input type="radio" name="weight-mode" value="dual">
+        <span class="mode-text">Tách độ dày<br><small>(Phân biệt thường xuyên và đen vừa)</small></span>
+      </label>
+      <label class="mode-label">
+        <input type="radio" name="weight-mode" value="triple">
+        <span class="mode-text">Ba chuỗi<br><small>(Kết hợp mỏng/thường/dày)</small></span>
+      </label>
+    </div>
+  </div>
+
+  <button class="convert-btn" id="convert-btn" disabled>BẮT ĐẦU</button>
+
+  <div class="progress-wrap" id="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+  </div>
+
+  <div class="log-panel" id="log-panel">
+    <div class="log-scroll" id="log-scroll"></div>
+  </div>
+
+  <div class="results" id="results"></div>
+  <div class="dl-all-wrap" id="dl-all-wrap">
+    <button class="dl-all-btn" id="dl-all-btn">Tải xuống tất cả</button>
+  </div>
+
+  <div class="footer">
+    <p>&copy; 2026 iFont @huamidev</p>
+    <div class="links">
+      <a href="https://github.com/huami1314/iFont" target="_blank">
+        <i class="fa-brands fa-github"></i>
+        GitHub
+      </a>
+      <a href="https://t.me/huamidev" target="_blank">
+        <i class="fa-brands fa-telegram"></i>
+        huamidev
+      </a>
+      <a href="https://mp.weixin.qq.com/s/Dpla77D9ggSuMgQTj6ZUNA" target="_blank">
+        <i class="fa-brands fa-weixin"></i>
+        Một huami
+      </a>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+let srcFiles = [];
+let resultBlobs = [];
+let worker = null;
+
+const $ = s => document.querySelector(s);
+const srcBox = $('#src-box'), srcInput = $('#src-input'), srcInfo = $('#src-info');
+const convertBtn = $('#convert-btn');
+const progressWrap = $('#progress-wrap'), progressFill = $('#progress-fill');
+const logPanel = $('#log-panel'), logScroll = $('#log-scroll');
+const resultsDiv = $('#results'), dlAllWrap = $('#dl-all-wrap'), dlAllBtn = $('#dl-all-btn');
+
+function setupDrop(box, input, onFiles) {
+  ['dragenter','dragover'].forEach(e => box.addEventListener(e, ev => { ev.preventDefault(); box.classList.add('drag-over'); }));
+  ['dragleave','drop'].forEach(e => box.addEventListener(e, ev => { ev.preventDefault(); box.classList.remove('drag-over'); }));
+  box.addEventListener('drop', ev => { if (ev.dataTransfer.files.length) onFiles(ev.dataTransfer.files); });
+  input.addEventListener('change', () => { if (input.files.length) onFiles(input.files); });
+}
+
+setupDrop(srcBox, srcInput, async files => {
+  srcFiles = [];
+  for (const f of files) {
+    srcFiles.push({ name: f.name, buffer: await f.arrayBuffer() });
+  }
+  const names = srcFiles.map(f => f.name);
+  srcInfo.innerHTML = names.length > 1
+    ? `<span class="file-count">${names.length} files</span> ${names.slice(0, 2).join(', ')}...`
+    : names.join(', ');
+  srcBox.classList.add('loaded');
+  checkReady();
+});
+
+function checkReady() {
+  convertBtn.disabled = srcFiles.length === 0;
+}
+
+function addLog(level, text) {
+  const time = new Date().toLocaleTimeString('zh-CN', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const line = document.createElement('div');
+  line.className = `log-line ${level}`;
+  line.textContent = `[${time}] ${text}`;
+  logScroll.appendChild(line);
+  requestAnimationFrame(() => { logScroll.scrollTop = logScroll.scrollHeight; });
+}
+
+convertBtn.addEventListener('click', () => {
+  if (!srcFiles.length) return;
+
+  resultsDiv.innerHTML = '';
+  resultBlobs = [];
+  dlAllWrap.style.display = 'none';
+  logScroll.innerHTML = '';
+  logPanel.classList.add('show');
+  progressWrap.classList.add('show');
+  progressFill.style.width = '0%';
+  convertBtn.classList.add('running');
+  convertBtn.innerHTML = '<span class=\"running-text\">ĐANG XỬ LÝ...</span>';
+
+  if (worker) worker.terminate();
+  worker = new Worker('worker.js');
+
+  worker.onerror = e => {
+    addLog('err', `Lỗi Worker: ${e.message}`);
+    convertBtn.classList.remove('running');
+    convertBtn.textContent = 'BẮT ĐẦU';
+  };
+
+  const srcClones = srcFiles.map(f => ({ name: f.name, buffer: f.buffer.slice(0) }));
+  const transfers = srcClones.map(f => f.buffer);
+
+  worker.postMessage(
+    { type: 'convert', srcFiles: srcClones, mode: document.querySelector('input[name="weight-mode"]:checked').value },
+    transfers
+  );
+
+  worker.onmessage = e => {
+    const msg = e.data;
+    switch (msg.type) {
+      case 'log':
+        addLog(msg.level, msg.text);
+        break;
+      case 'progress':
+        progressFill.style.width = `${(msg.current / msg.total * 100).toFixed(0)}%`;
+        break;
+      case 'result':
+        addResult(msg.name, msg.buffer);
+        break;
+      case 'done':
+        addLog('ok', `Hoàn thành quy trình đóng gói`);
+        progressFill.style.width = '100%';
+        convertBtn.classList.remove('running');
+        convertBtn.textContent = 'XONG';
+        
+        if (resultBlobs.length > 1) {
+          dlAllWrap.style.display = 'block';
+          document.getElementById('dl-all-btn').click();
+        }
+        break;
+      case 'error':
+        addLog('err', msg.message);
+        convertBtn.classList.remove('running');
+        convertBtn.textContent = 'BẮT ĐẦU';
+        checkReady();
+        break;
+    }
+  };
+});
+
+function addResult(name, buffer) {
+  const blob = new Blob([buffer], { type: 'font/collection' });
+  const url = URL.createObjectURL(blob);
+  resultBlobs.push({ name, blob, url });
+
+  const item = document.createElement('div');
+  item.className = 'result-item';
+  item.innerHTML = `
+    <span class="result-name">${name}</span>
+    <span class="result-size">${(buffer.byteLength / 1048576).toFixed(1)}M</span>
+    <a class="dl-btn" href="${url}" download="${name}">DOWNLOAD</a>
+  `;
+  resultsDiv.appendChild(item);
+}
+
+dlAllBtn.addEventListener('click', async () => {
+  if (resultBlobs.length === 0) return;
+  const zip = new JSZip();
+  resultBlobs.forEach(b => {
+    zip.file(b.name, b.blob);
+  });
+  
+  addLog('step', 'Đang đóng gói ZIP...');
+  dlAllBtn.textContent = 'Đang đóng gói...';
+  dlAllBtn.disabled = true;
+  
+  try {
+    const content = await zip.generateAsync({ type: 'blob' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(content);
+    a.download = `FontForge_iOS_${Date.now()}.zip`;
+    a.click();
+    addLog('ok', 'Tải ZIP ngành đóng gói hoàn tất');
+  } catch (e) {
+    addLog('err', 'Lỗi đóng gói ZIP: ' + e.message);
+  }
+  
+  dlAllBtn.textContent = 'Tải xuống tất cả';
+  dlAllBtn.disabled = false;
+});
+</script>
+</body>
+</html>
